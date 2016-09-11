@@ -2,7 +2,7 @@ var express = require('express');
 var mongoose = require('mongoose');
 var http = require('http');
 
-var port = 8080 || process.env.PORT; 
+var port = process.env.PORT || 8080; 
 
 var app = express();
 var server = http.createServer(app);
@@ -13,7 +13,7 @@ app.set('view engine', 'jade');
 
 var Stock = require('./models/Stock.js'); //stock model
 
-var url = 'mongodb://localhost/MyDataBase' || process.env.MONGOLAB_URI;
+var url = process.env.MONGOLAB_URI || 'mongodb://localhost/MyDataBase';
 
 mongoose.connect(url);
 
