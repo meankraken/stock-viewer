@@ -17,7 +17,8 @@
     "Express",
     "Mongoose",
     "D3",
-    "React"
+    "React",
+	"Socket.io"
   ],
   "author": "Jeffrey Feng",
   "license": "ISC",

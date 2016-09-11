@@ -30,7 +30,7 @@ io.on('connection', function(socket) {
 					temp.save(); //save the stock to db
 				}
 			});
-			socket.emit('stockAdded', { code: data.code }); 
+			io.sockets.emit('stockAdded', { code: data.code }); //fire stockAdded event to all clients
 			
 		});
 		
@@ -40,7 +40,7 @@ io.on('connection', function(socket) {
 					console.log(err);
 				}
 			});
-			socket.emit('stockRemoved', { code: data.code });
+			io.sockets.emit('stockRemoved', { code: data.code }); //fire stockRemoved event to all clients
 			
 		});
 });

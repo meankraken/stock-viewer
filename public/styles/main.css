@@ -3,12 +3,12 @@ body {
 }
 
 .container {
-	height:900px;
+	height:650px;
 }
 
 .chartContainer {
 	position:relative;
-	height:60%;
+	height:85%;
 	width:79%;
 	top:5%;
 	float:left;
@@ -31,7 +31,7 @@ body {
 
 .toolBar {
 	position:relative;
-	height:60%;
+	height:85%;
 	width:20%;
 	box-shadow:0px 0px 5px 3px #262626;
 	float:right;
@@ -154,6 +154,18 @@ ul {
 	pointer-events:none;
 }
 
+#note {
+	margin:auto;
+	width:55%;
+	font-size:2em;
+	font-family:Lekton;
+	text-align:center;
+	
+}
+
+#note .lower {
+	font-size:.8em;
+}
 
 
 

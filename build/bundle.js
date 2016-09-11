@@ -93,14 +93,19 @@
 			var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
 	
 			_this.state = { stockList: [] };
-			_this.submitStock = _this.submitStock.bind(_this);
-			_this.removeStock = _this.removeStock.bind(_this);
+			_this.submitStock = _this.submitStock.bind(_this); //client adds stock via toolbar
+			_this.removeStock = _this.removeStock.bind(_this); //client removes stock via toolbar
+			_this.addStock = _this.addStock.bind(_this); //add stock via WS 
+			_this.remStock = _this.remStock.bind(_this); //remove stock via WS 
 			return _this;
 		}
 	
 		_createClass(App, [{
 			key: 'componentDidMount',
 			value: function componentDidMount() {
+				socket.on('stockAdded', this.addStock);
+				socket.on('stockRemoved', this.remStock);
+	
 				if (stocks != null) {
 					var stockArr = [];
 					stocks.forEach(function (stock) {
@@ -129,14 +134,52 @@
 						});
 					}
 				}
-	
-				socket.on('stockAdded', this.addStock);
 			}
 		}, {
 			key: 'addStock',
-			value: function addStock() {
-				//add stock that another client updated
-				console.log("Adding stock.");
+			value: function addStock(data) {
+				//add stock via socket event 
+				var addBool = true;
+				for (var i = 0; i < this.state.stockList.length; i++) {
+					if (this.state.stockList[i].code == data.code) {
+						addBool = false;
+					}
+				}
+				if (addBool) {
+					//if not already in list, add 
+					var arr = this.state.stockList.slice();
+					var today = new Date();
+					var dateStr = today.getYear() + 1900 - 1 + "-" + formatNum(today.getMonth() + 1) + "-" + formatNum(today.getDate()); //for one year
+					_jquery2.default.ajax({
+						url: 'https://www.quandl.com/api/v3/datasets/WIKI/' + data.code + '.json?api_key=fsT69Hcx4jABAz-GygyD' + '&start_date=' + dateStr,
+						dataType: 'json',
+						success: function (data) {
+							var obj = { code: data.dataset.dataset_code, name: data.dataset.name, value: data.dataset.data[0][1], data: data.dataset.data };
+							arr.push(obj);
+							this.setState({ stockList: arr.slice() });
+						}.bind(this),
+						failure: function failure(err) {
+							console.log("Failure getting stock data.");
+						}
+	
+					});
+				}
+			}
+		}, {
+			key: 'remStock',
+			value: function remStock(data) {
+				//remove stock via socket event
+				var index = -1;
+				var arr = this.state.stockList.slice();
+				for (var i = 0; i < arr.length; i++) {
+					if (arr[i].code == data.code) {
+						index = i;
+					}
+				}
+				if (index != -1) {
+					arr.splice(index, 1);
+					this.setState({ stockList: arr.slice() });
+				}
 			}
 		}, {
 			key: 'submitStock',
