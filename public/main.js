@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import $ from 'jquery';
+import _ from 'lodash';
+
 
 $(document).ready(function() {
 	$(document).on('mouseenter', '.removeItem', function() {
@@ -10,14 +12,54 @@ $(document).ready(function() {
 		$(this).css('background-color', '');
 	});
 	
+	
 });
 
 class App extends React.Component {
 	constructor(props) {
 		super(props);
-		this.state = { stockList: [], timeFrame: "" }; //default for debugging, should be empty array
+		this.state = { stockList: [] }; 
 		this.submitStock = this.submitStock.bind(this);
 		this.removeStock = this.removeStock.bind(this);
+	}
+	
+	componentDidMount() {
+		if ((stocks)!=null) {
+			var stockArr = [];
+			stocks.forEach(function(stock) {
+				stockArr.push(stock.code);
+			});
+			
+			var dataArr = []; 
+			var callArr = [];
+			
+			for (var i=0; i<stockArr.length; i++) { //prepopulate the state with stocks from db on first mount
+				var today = new Date();
+				var dateStr = (today.getYear()+1900-1) + "-" + formatNum(today.getMonth()+1) + "-" + formatNum(today.getDate()); //for one year
+				callArr = $.ajax({
+								url:'https://www.quandl.com/api/v3/datasets/WIKI/' + stockArr[i] +'.json?api_key=fsT69Hcx4jABAz-GygyD' + '&start_date=' + dateStr,
+								dataType:'json',
+								success:function(data) {
+									var obj = { code: data.dataset.dataset_code, name: data.dataset.name, value: data.dataset.data[0][1], data: data.dataset.data };
+									dataArr.push(obj);
+									this.setState({ stockList: dataArr.slice() });
+									
+								}.bind(this),
+								failure:function(err) {
+									console.log("Failure getting stock data.");
+								}
+					
+				});
+				
+			}
+		}
+		
+		socket.on('stockAdded', this.addStock);
+		
+	}
+	
+	addStock() { //add stock that another client updated
+		console.log("Adding stock.");
 	}
 	
 	submitStock(code) { //add stock to tracking list
@@ -30,6 +72,7 @@ class App extends React.Component {
 					success:function(data) {
 						var obj = { code: data.dataset.dataset_code, name: data.dataset.name, value: data.dataset.data[0][1], data: data.dataset.data };
 						arr.push(obj);
+						socket.emit('addingStock', { code: obj.code }); //when adding the stock, emit via socket.io to update other clients
 						this.setState({ stockList: arr.slice() });
 					}.bind(this),
 					failure:function(err) {
@@ -49,6 +92,7 @@ class App extends React.Component {
 			}
 		}
 		arr.splice(index,1); 
+		socket.emit('removingStock', { code: code }); //emit the removeStock event to update all clients
 		this.setState({ stockList: arr.slice() });
 	}
 	
@@ -71,6 +115,8 @@ class Chart extends React.Component {
 				var margin = { top:25, right:25, bottom:25, left:25 };
 				var width = $('.chartContainer').width() - margin.left - margin.right;
 				var height = $('.chartContainer').height() - margin.top - margin.bottom;
+				
+				var bisectDate = d3.bisector(function(d) { return d.date; }).right; 
 				
 				var svg = d3.select('.chartContainer').append('svg')
 				.attr('width', width + margin.left + margin.right)
@@ -122,8 +168,70 @@ class Chart extends React.Component {
 				svg.append('g').attr('class', 'axis yAxis').call(yAxis); //add the y axis
 				
 				arr.forEach(function(data) {
-					svg.append('path').attr('class', 'line').attr('d', line(data));
+					svg.append('path').attr('class', 'line').attr('d', line(data)); //draw each stock line
+					svg.append('g').attr('class', data[0].name + " popUp").append('text'); //create a overlay popup for each stock to be used for mouseover events
 				});
+				
+				var marker = svg.append('line').attr('class','lineMarker'); //vertical marker
+				
+				var lastUpdate = 0;
+				var timer;
+				
+				svg.append('rect').attr('class', 'overlay').attr('width',width).attr('height',height) //invisible overlay for getting coordinates
+				.on('mouseover', function() {  marker.style('display','block'); })
+				.on('mousemove', function() { drawVert(); }) 
+				.on('mouseout', function() {  clearTimeout(timer); marker.style('display','none'); d3.selectAll('.popUp').select('text').text(''); });
+				
+				function drawVert() {
+					clearTimeout(timer);
+					var xPoint = d3.mouse(d3.select('.overlay').node())[0]; //get x coordinate of mouse
+					marker.attr('x1', xPoint).attr('y1', 0).attr('x2', xPoint).attr('y2', height);
+					
+					if (Date.now() - lastUpdate>100) {
+						arr.forEach(function(data) { //for each stock line
+							data = data.map(function(d) {
+								var obj = { date: formatDate.parse(d.date), value: d.value, name: d.name };
+								return obj;
+							});
+							data = data.sort(function(a, b) {
+								return a.date - b.date;
+							});
+							
+							var theDate = x.invert(xPoint); //get corresponding date of mouse x coordinate 
+							var index = bisectDate(data, theDate, 1); //grab data index of that date 
+							var d = data[index]; //data point 
+							var theClass = "." + d.name; 
+							
+							d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]"); 
+							
+							lastUpdate = Date.now();
+						});
+					}
+					
+					timer = setTimeout(function() {
+						arr.forEach(function(data) { //for each stock line
+							data = data.map(function(d) {
+								var obj = { date: formatDate.parse(d.date), value: d.value, name: d.name };
+								return obj;
+							});
+							data = data.sort(function(a, b) {
+								return a.date - b.date;
+							});
+							
+							var theDate = x.invert(xPoint); //get corresponding date of mouse x coordinate 
+							var index = bisectDate(data, theDate, 1); //grab data index of that date 
+							var d = data[index]; //data point 
+							var theClass = "." + d.name; 
+							
+							d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]"); 
+							
+							lastUpdate = Date.now();
+						});
+						
+					},250);
+				}
+				
+				
 			
 		}
 		
@@ -193,5 +301,6 @@ function formatNum(num) { //helper function for padding numbers
 		return num.toString();
 	}
 }
+
 
 ReactDOM.render(<App/>, document.querySelector(".app"));

@@ -7,7 +7,11 @@ head
 	link(rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Iceland")
 	link(rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Play")
 	link(rel="stylesheet" href="/public/styles/main.css")
+	script(src="/socket.io/socket.io.js")
 	script(src="//d3js.org/d3.v3.min.js")
+	script.
+		var stocks = !{JSON.stringify(stocks)};
+		var socket = io.connect('/');
 	
 body
 	div.app 
