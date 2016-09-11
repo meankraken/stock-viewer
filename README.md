@@ -1,1 +1,2 @@
 # StockSeeker Application - created by Jeff Feng
+### Stock tracking application. Utilizes React for the interface, D3 to create stock charts, and sockets to dynamically update stock list across all clients.
