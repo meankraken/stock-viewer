@@ -92,11 +92,12 @@
 	
 			var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
 	
-			_this.state = { stockList: [] };
+			_this.state = { stockList: [], range: "year" };
 			_this.submitStock = _this.submitStock.bind(_this); //client adds stock via toolbar
 			_this.removeStock = _this.removeStock.bind(_this); //client removes stock via toolbar
 			_this.addStock = _this.addStock.bind(_this); //add stock via WS 
 			_this.remStock = _this.remStock.bind(_this); //remove stock via WS 
+			_this.changeRange = _this.changeRange.bind(_this); //change date range
 			return _this;
 		}
 	
@@ -187,7 +188,22 @@
 				//add stock to tracking list
 				var arr = this.state.stockList.slice();
 				var today = new Date();
-				var dateStr = today.getYear() + 1900 - 1 + "-" + formatNum(today.getMonth() + 1) + "-" + formatNum(today.getDate()); //for one year
+				var dateStr;
+				var rng = this.state.range;
+				if (rng == "mo") {
+					if (today.getMonth() == 0) {
+						dateStr = today.getYear() + 1900 - 1 + "-" + "12" + "-" + formatNum(today.getDate());
+					} else {
+						dateStr = today.getYear() + 1900 + "-" + formatNum(today.getMonth()) + "-" + formatNum(today.getDate());
+					}
+				} else if (rng == "3mo") {
+					today.setMonth(today.getMonth() - 3);
+					dateStr = today.getYear() + 1900 + "-" + formatNum(today.getMonth() + 1) + "-" + formatNum(today.getDate());
+				} else if (rng == "year") {
+					dateStr = today.getYear() + 1900 - 1 + "-" + formatNum(today.getMonth() + 1) + "-" + formatNum(today.getDate());
+				} else {
+					dateStr = today.getYear() + 1900 - 3 + "-" + formatNum(today.getMonth() + 1) + "-" + formatNum(today.getDate());
+				}
 				_jquery2.default.ajax({
 					url: 'https://www.quandl.com/api/v3/datasets/WIKI/' + code + '.json?api_key=fsT69Hcx4jABAz-GygyD' + '&start_date=' + dateStr,
 					dataType: 'json',
@@ -219,12 +235,57 @@
 				this.setState({ stockList: arr.slice() });
 			}
 		}, {
+			key: 'changeRange',
+			value: function changeRange(rng) {
+				//change date range
+				//first must convert all current stocks 
+				var codeArr = this.state.stockList.map(function (stock) {
+					return stock.code;
+				});
+	
+				var dataArr = [];
+				var callArr = [];
+				var today = new Date();
+				var dateStr;
+				if (rng == "mo") {
+					if (today.getMonth() == 0) {
+						dateStr = today.getYear() + 1900 - 1 + "-" + "12" + "-" + formatNum(today.getDate());
+					} else {
+						dateStr = today.getYear() + 1900 + "-" + formatNum(today.getMonth()) + "-" + formatNum(today.getDate());
+					}
+				} else if (rng == "3mo") {
+					today.setMonth(today.getMonth() - 3);
+					dateStr = today.getYear() + 1900 + "-" + formatNum(today.getMonth() + 1) + "-" + formatNum(today.getDate());
+				} else if (rng == "year") {
+					dateStr = today.getYear() + 1900 - 1 + "-" + formatNum(today.getMonth() + 1) + "-" + formatNum(today.getDate());
+				} else {
+					dateStr = today.getYear() + 1900 - 3 + "-" + formatNum(today.getMonth() + 1) + "-" + formatNum(today.getDate());
+				}
+	
+				for (var i = 0; i < codeArr.length; i++) {
+					//prepopulate the state with stocks from db on first mount
+					callArr = _jquery2.default.ajax({
+						url: 'https://www.quandl.com/api/v3/datasets/WIKI/' + codeArr[i] + '.json?api_key=fsT69Hcx4jABAz-GygyD' + '&start_date=' + dateStr,
+						dataType: 'json',
+						success: function (data) {
+							var obj = { code: data.dataset.dataset_code, name: data.dataset.name, value: data.dataset.data[0][1], data: data.dataset.data };
+							dataArr.push(obj);
+							this.setState({ stockList: dataArr.slice(), range: rng });
+						}.bind(this),
+						failure: function failure(err) {
+							console.log("Failure getting stock data.");
+						}
+	
+					});
+				}
+			}
+		}, {
 			key: 'render',
 			value: function render() {
 				return _react2.default.createElement(
 					'div',
 					{ className: 'container' },
-					_react2.default.createElement(Chart, { stockList: this.state.stockList.slice() }),
+					_react2.default.createElement(Chart, { stockList: this.state.stockList.slice(), range: this.state.range, changeRange: this.changeRange }),
 					_react2.default.createElement(ToolBar, { stockList: this.state.stockList.slice(), submitStock: this.submitStock, removeStock: this.removeStock })
 				);
 			}
@@ -292,6 +353,9 @@
 	
 									var theDate = x.invert(xPoint); //get corresponding date of mouse x coordinate 
 									var index = bisectDate(data, theDate, 1); //grab data index of that date 
+									if (index + 1 >= data.length) {
+										index -= 2;
+									}
 									var d = data[index]; //data point 
 									var theClass = "." + d.name;
 	
@@ -314,6 +378,10 @@
 	
 									var theDate = x.invert(xPoint); //get corresponding date of mouse x coordinate 
 									var index = bisectDate(data, theDate, 1); //grab data index of that date 
+									if (index + 1 >= data.length) {
+										index -= 2;
+									}
+	
 									var d = data[index]; //data point 
 									var theClass = "." + d.name;
 	
@@ -372,6 +440,13 @@
 	
 						xAxis = d3.svg.axis().scale(x).orient('bottom').outerTickSize(0).tickFormat(d3.time.format("%B '%y")).ticks(5).innerTickSize(-height).outerTickSize(0);
 						yAxis = d3.svg.axis().scale(y).orient('left').outerTickSize(0).ticks(5).innerTickSize(-width).outerTickSize(0);
+	
+	
+						if (_this3.props.range == "mo" || _this3.props.range == "3mo") {
+							//if range is shorter, need to change tick format 
+							xAxis.tickFormat(d3.time.format("%d %b"));
+						}
+	
 						line = d3.svg.line().x(function (d) {
 							return x(formatDate.parse(d.date));
 						}).y(function (d) {
@@ -406,6 +481,8 @@
 		}, {
 			key: 'render',
 			value: function render() {
+				var _this4 = this;
+	
 				if (this.props.stockList.length <= 0) {
 					return _react2.default.createElement(
 						'div',
@@ -417,7 +494,47 @@
 						)
 					);
 				} else {
-					return _react2.default.createElement('div', { className: 'chartContainer' });
+					return _react2.default.createElement(
+						'div',
+						{ className: 'chartContainer' },
+						_react2.default.createElement(
+							'div',
+							{ id: 'rangeBar' },
+							_react2.default.createElement(
+								'div',
+								{ className: 'rangeBtn', onClick: function onClick() {
+										return _this4.props.changeRange("mo");
+									} },
+								'1M'
+							),
+							_react2.default.createElement(
+								'div',
+								{ className: 'rangeBtn', onClick: function onClick() {
+										return _this4.props.changeRange("3mo");
+									} },
+								'3M'
+							),
+							_react2.default.createElement(
+								'div',
+								{ className: 'rangeBtn', onClick: function onClick() {
+										return _this4.props.changeRange("year");
+									} },
+								'1Y'
+							),
+							_react2.default.createElement(
+								'div',
+								{ className: 'rangeBtn', onClick: function onClick() {
+										return _this4.props.changeRange("3year");
+									} },
+								'3Y'
+							)
+						),
+						_react2.default.createElement(
+							'span',
+							{ id: 'titleText' },
+							'StockSeeker'
+						)
+					);
 				}
 			}
 		}]);
@@ -431,10 +548,10 @@
 		function ToolBar(props) {
 			_classCallCheck(this, ToolBar);
 	
-			var _this4 = _possibleConstructorReturn(this, (ToolBar.__proto__ || Object.getPrototypeOf(ToolBar)).call(this, props));
+			var _this5 = _possibleConstructorReturn(this, (ToolBar.__proto__ || Object.getPrototypeOf(ToolBar)).call(this, props));
 	
-			_this4.getStockBoxes = _this4.getStockBoxes.bind(_this4);
-			return _this4;
+			_this5.getStockBoxes = _this5.getStockBoxes.bind(_this5);
+			return _this5;
 		}
 	
 		_createClass(ToolBar, [{
@@ -447,7 +564,7 @@
 		}, {
 			key: 'render',
 			value: function render() {
-				var _this5 = this;
+				var _this6 = this;
 	
 				var codeArr = this.props.stockList.map(function (stock) {
 					return stock.code;
@@ -459,7 +576,7 @@
 						'form',
 						{ id: 'stockForm', onSubmit: function onSubmit(event) {
 								event.preventDefault();var sym = (0, _jquery2.default)('#stockInput').val().toUpperCase();if (codeArr.indexOf(sym) == -1) {
-									_this5.props.submitStock(sym);
+									_this6.props.submitStock(sym);
 								}
 							} },
 						_react2.default.createElement('input', { id: 'stockInput', placeholder: 'Enter Stock Code', type: 'text' }),
@@ -488,7 +605,7 @@
 		_createClass(Box, [{
 			key: 'render',
 			value: function render() {
-				var _this7 = this;
+				var _this8 = this;
 	
 				return _react2.default.createElement(
 					'div',
@@ -513,7 +630,7 @@
 					_react2.default.createElement(
 						'div',
 						{ onClick: function onClick() {
-								return _this7.props.removeStock(_this7.props.code);
+								return _this8.props.removeStock(_this8.props.code);
 							}, className: 'removeItem' },
 						'x'
 					)

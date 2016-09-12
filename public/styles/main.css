@@ -29,6 +29,43 @@ body {
 	
 }
 
+#titleText {
+	font-size:.8em;
+	position:absolute;
+	left:25px;
+	color:grey;
+	font-weight:700;
+	top:2px;
+	font-family:sans-serif;
+
+}
+
+#rangeBar {
+	position:absolute;
+	top:0;
+	left:82%;
+	height:30px;
+	width:250px;
+	z-index:35;
+	pointer-events:all;
+	margin-left:25px;
+}
+
+.rangeBtn {
+	display:inline-block;
+	position:relative;
+	margin-left:10px;
+	color:#949494;
+	font-size:.6em;
+	background-color:#3B3B3B;
+	height:18px;
+	width:18px;
+	text-align:center;
+	line-height:18px;
+	z-index:50;
+	cursor:pointer;
+}
+
 .toolBar {
 	position:relative;
 	height:85%;

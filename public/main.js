@@ -18,11 +18,12 @@ $(document).ready(function() {
 class App extends React.Component {
 	constructor(props) {
 		super(props);
-		this.state = { stockList: [] }; 
+		this.state = { stockList: [], range: "year" }; 
 		this.submitStock = this.submitStock.bind(this); //client adds stock via toolbar
 		this.removeStock = this.removeStock.bind(this); //client removes stock via toolbar
 		this.addStock = this.addStock.bind(this); //add stock via WS 
 		this.remStock = this.remStock.bind(this); //remove stock via WS 
+		this.changeRange = this.changeRange.bind(this); //change date range
 	}
 	
 	componentDidMount() {
@@ -108,7 +109,26 @@ class App extends React.Component {
 	submitStock(code) { //add stock to tracking list
 		var arr = this.state.stockList.slice();
 		var today = new Date();
-		var dateStr = (today.getYear()+1900-1) + "-" + formatNum(today.getMonth()+1) + "-" + formatNum(today.getDate()); //for one year
+		var dateStr;
+		var rng = this.state.range;
+		if (rng=="mo") {
+			if (today.getMonth()==0) { 
+				dateStr = (today.getYear()+1900-1) + "-" + "12" + "-" + formatNum(today.getDate());
+			}
+			else {
+				dateStr = (today.getYear()+1900) + "-" + formatNum(today.getMonth()) + "-" + formatNum(today.getDate()); 
+			}
+		}
+		else if (rng=="3mo") {
+			today.setMonth(today.getMonth() - 3);
+			dateStr = (today.getYear()+1900) + "-" + formatNum(today.getMonth()+1) + "-" + formatNum(today.getDate()); 
+		}
+		else if (rng=="year") {
+			dateStr = (today.getYear()+1900-1) + "-" + formatNum(today.getMonth()+1) + "-" + formatNum(today.getDate());
+		}
+		else {
+			dateStr = (today.getYear()+1900-3) + "-" + formatNum(today.getMonth()+1) + "-" + formatNum(today.getDate());
+		}
 		$.ajax({
 					url:'https://www.quandl.com/api/v3/datasets/WIKI/' + code +'.json?api_key=fsT69Hcx4jABAz-GygyD' + '&start_date=' + dateStr,
 					dataType:'json',
@@ -139,9 +159,57 @@ class App extends React.Component {
 		this.setState({ stockList: arr.slice() });
 	}
 	
+	changeRange(rng) { //change date range
+		//first must convert all current stocks 
+		var codeArr = this.state.stockList.map(function(stock) {
+			return stock.code;
+		});
+		
+		var dataArr = [];
+		var callArr = [];
+		var today = new Date();
+		var dateStr;
+		if (rng=="mo") {
+			if (today.getMonth()==0) { 
+				dateStr = (today.getYear()+1900-1) + "-" + "12" + "-" + formatNum(today.getDate());
+			}
+			else {
+				dateStr = (today.getYear()+1900) + "-" + formatNum(today.getMonth()) + "-" + formatNum(today.getDate()); 
+			}
+		}
+		else if (rng=="3mo") {
+			today.setMonth(today.getMonth() - 3);
+			dateStr = (today.getYear()+1900) + "-" + formatNum(today.getMonth()+1) + "-" + formatNum(today.getDate()); 
+		}
+		else if (rng=="year") {
+			dateStr = (today.getYear()+1900-1) + "-" + formatNum(today.getMonth()+1) + "-" + formatNum(today.getDate());
+		}
+		else {
+			dateStr = (today.getYear()+1900-3) + "-" + formatNum(today.getMonth()+1) + "-" + formatNum(today.getDate());
+		}
+		
+		for (var i=0; i<codeArr.length; i++) { //prepopulate the state with stocks from db on first mount
+				callArr = $.ajax({
+								url:'https://www.quandl.com/api/v3/datasets/WIKI/' + codeArr[i] +'.json?api_key=fsT69Hcx4jABAz-GygyD' + '&start_date=' + dateStr,
+								dataType:'json',
+								success:function(data) {
+									var obj = { code: data.dataset.dataset_code, name: data.dataset.name, value: data.dataset.data[0][1], data: data.dataset.data };
+									dataArr.push(obj);
+									this.setState({ stockList: dataArr.slice(),range: rng });
+								}.bind(this),
+								failure:function(err) {
+									console.log("Failure getting stock data.");
+								}
+					
+				});
+				
+		}
+		
+	}
+	
 	render() {
 		return <div className="container">
-			<Chart stockList={this.state.stockList.slice()} />
+			<Chart stockList={this.state.stockList.slice()} range={this.state.range} changeRange={this.changeRange} />
 			<ToolBar stockList={this.state.stockList.slice()} submitStock={this.submitStock} removeStock={this.removeStock} />
 		</div>;
 	}
@@ -205,6 +273,10 @@ class Chart extends React.Component {
 				var xAxis = d3.svg.axis().scale(x).orient('bottom').outerTickSize(0).tickFormat(d3.time.format("%B '%y")).ticks(5).innerTickSize(-height).outerTickSize(0);
 				var yAxis = d3.svg.axis().scale(y).orient('left').outerTickSize(0).ticks(5).innerTickSize(-width).outerTickSize(0);
 				
+				if (this.props.range=="mo" || this.props.range=="3mo") { //if range is shorter, need to change tick format 
+					xAxis.tickFormat(d3.time.format("%d %b"));
+				}
+				
 				var line = d3.svg.line().x(function(d) { return x(formatDate.parse(d.date)); }).y(function(d) { return y(d.value); });
 				
 				svg.append('g').attr('class', 'axis xAxis').attr('transform', 'translate(0,' + parseInt(height) + ')').call(xAxis); //add the x axis
@@ -242,6 +314,9 @@ class Chart extends React.Component {
 							
 							var theDate = x.invert(xPoint); //get corresponding date of mouse x coordinate 
 							var index = bisectDate(data, theDate, 1); //grab data index of that date 
+							if ((index+1)>=data.length) {
+								index-=2;
+							}
 							var d = data[index]; //data point 
 							var theClass = "." + d.name; 
 							
@@ -263,6 +338,10 @@ class Chart extends React.Component {
 							
 							var theDate = x.invert(xPoint); //get corresponding date of mouse x coordinate 
 							var index = bisectDate(data, theDate, 1); //grab data index of that date 
+							if ((index+1)>=data.length) {
+								index-=2;
+							}
+							
 							var d = data[index]; //data point 
 							var theClass = "." + d.name; 
 							
@@ -289,7 +368,15 @@ class Chart extends React.Component {
 				);
 		}
 		else {
-			return <div className="chartContainer"></div>;
+			return (<div className="chartContainer">
+						<div id="rangeBar">
+							<div className="rangeBtn" onClick={() => this.props.changeRange("mo")}>1M</div>
+							<div className="rangeBtn" onClick={() => this.props.changeRange("3mo")}>3M</div>
+							<div className="rangeBtn" onClick={() => this.props.changeRange("year")}>1Y</div>
+							<div className="rangeBtn" onClick={() => this.props.changeRange("3year")}>3Y</div>
+						</div>
+						<span id="titleText">StockSeeker</span>
+				   </div>);
 		}
 	}
 }
