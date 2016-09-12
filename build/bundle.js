@@ -438,13 +438,13 @@
 	
 						y = d3.scale.linear().domain([minValue, maxValue]).range([height, 0]); //y scale
 	
-						xAxis = d3.svg.axis().scale(x).orient('bottom').outerTickSize(0).tickFormat(d3.time.format("%B '%y")).ticks(5).innerTickSize(-height).outerTickSize(0);
+						xAxis = d3.svg.axis().scale(x).orient('bottom').outerTickSize(0).tickFormat(d3.time.format("%B '%y")).ticks(10).innerTickSize(-height).outerTickSize(0);
 						yAxis = d3.svg.axis().scale(y).orient('left').outerTickSize(0).ticks(5).innerTickSize(-width).outerTickSize(0);
 	
 	
 						if (_this3.props.range == "mo" || _this3.props.range == "3mo") {
 							//if range is shorter, need to change tick format 
-							xAxis.tickFormat(d3.time.format("%d %b"));
+							xAxis.tickFormat(d3.time.format("%d %b")).ticks(5);
 						}
 	
 						line = d3.svg.line().x(function (d) {
