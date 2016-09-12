@@ -333,7 +333,14 @@ class Chart extends React.Component {
 							var d = data[index]; //data point 
 							var theClass = "." + d.name; 
 							
-							d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]"); 
+							if (xPoint>(width-75)) { //change the text position if nearing end of graph 
+								d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]")
+								.attr('text-anchor','end');
+							} 
+							else {
+								d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]"); 
+							}
+							
 							
 							lastUpdate = Date.now();
 						});
@@ -358,7 +365,13 @@ class Chart extends React.Component {
 							var d = data[index]; //data point 
 							var theClass = "." + d.name; 
 							
-							d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]"); 
+							if (xPoint>(width-75)) { //change the text position if nearing end of graph 
+								d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]")
+								.attr('text-anchor','end');
+							} 
+							else {
+								d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]"); 
+							} 
 							
 							lastUpdate = Date.now();
 						});
