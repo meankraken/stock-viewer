@@ -270,11 +270,11 @@ class Chart extends React.Component {
 				var x = d3.time.scale().domain(d3.extent(allDates, function(d) { return formatDate.parse(d); })).range([0,width]); //x scale
 				var y = d3.scale.linear().domain([minValue, maxValue]).range([height,0]); //y scale
 				
-				var xAxis = d3.svg.axis().scale(x).orient('bottom').outerTickSize(0).tickFormat(d3.time.format("%B '%y")).ticks(5).innerTickSize(-height).outerTickSize(0);
+				var xAxis = d3.svg.axis().scale(x).orient('bottom').outerTickSize(0).tickFormat(d3.time.format("%B '%y")).ticks(10).innerTickSize(-height).outerTickSize(0);
 				var yAxis = d3.svg.axis().scale(y).orient('left').outerTickSize(0).ticks(5).innerTickSize(-width).outerTickSize(0);
 				
 				if (this.props.range=="mo" || this.props.range=="3mo") { //if range is shorter, need to change tick format 
-					xAxis.tickFormat(d3.time.format("%d %b"));
+					xAxis.tickFormat(d3.time.format("%d %b")).ticks(5);
 				}
 				
 				var line = d3.svg.line().x(function(d) { return x(formatDate.parse(d.date)); }).y(function(d) { return y(d.value); });
