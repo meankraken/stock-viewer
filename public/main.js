@@ -338,7 +338,8 @@ class Chart extends React.Component {
 								.attr('text-anchor','end');
 							} 
 							else {
-								d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]"); 
+								d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]")
+								.attr('text-anchor','start'); 
 							}
 							
 							
@@ -370,7 +371,8 @@ class Chart extends React.Component {
 								.attr('text-anchor','end');
 							} 
 							else {
-								d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]"); 
+								d3.select(theClass).attr('transform','translate(' + x(d.date) + ',' + (y(d.value)-10) + ')').select('text').text(d.name + " - [$" + d.value + "]")
+								.attr('text-anchor','start'); 
 							} 
 							
 							lastUpdate = Date.now();
