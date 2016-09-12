@@ -12,6 +12,19 @@ $(document).ready(function() {
 		$(this).css('background-color', '');
 	});
 	
+	$(document).on('mouseenter', '.rangeBtn', function() {
+		$(this).css('color', 'white');
+	});
+	$(document).on('mouseleave', '.rangeBtn', function() {
+		$(this).css('color', '');
+	});
+	
+	$(document).on('mousedown', '.rangeBtn', function() {
+		$(this).css('box-shadow', 'inset 0px 0px 1px 2px #808080');
+	});
+	$(document).on('mouseup', '.rangeBtn', function() {
+		$(this).css('box-shadow', '');
+	});
 	
 });
 

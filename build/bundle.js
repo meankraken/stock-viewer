@@ -82,6 +82,20 @@
 		(0, _jquery2.default)(document).on('mouseleave', '.removeItem', function () {
 			(0, _jquery2.default)(this).css('background-color', '');
 		});
+	
+		(0, _jquery2.default)(document).on('mouseenter', '.rangeBtn', function () {
+			(0, _jquery2.default)(this).css('color', 'white');
+		});
+		(0, _jquery2.default)(document).on('mouseleave', '.rangeBtn', function () {
+			(0, _jquery2.default)(this).css('color', '');
+		});
+	
+		(0, _jquery2.default)(document).on('mousedown', '.rangeBtn', function () {
+			(0, _jquery2.default)(this).css('box-shadow', 'inset 0px 0px 1px 2px #808080');
+		});
+		(0, _jquery2.default)(document).on('mouseup', '.rangeBtn', function () {
+			(0, _jquery2.default)(this).css('box-shadow', '');
+		});
 	});
 	
 	var App = function (_React$Component) {
