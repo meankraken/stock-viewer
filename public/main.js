@@ -315,7 +315,7 @@ class Chart extends React.Component {
 					var xPoint = d3.mouse(d3.select('.overlay').node())[0]; //get x coordinate of mouse
 					marker.attr('x1', xPoint).attr('y1', 0).attr('x2', xPoint).attr('y2', height);
 					
-					if (Date.now() - lastUpdate>100) {
+					if (Date.now() - lastUpdate>50) {
 						arr.forEach(function(data) { //for each stock line
 							data = data.map(function(d) {
 								var obj = { date: formatDate.parse(d.date), value: d.value, name: d.name };
